@@ -14,7 +14,9 @@ function debugStream(message) {
 function embyGet(path, params) {
     params = params || {};
     params.api_key = EMBY_API_KEY;
-    var query = Object.keys(params).map(function (k) {
+    var query = Object.keys(params).filter(function (k) {
+        return params[k] !== undefined && params[k] !== null;
+    }).map(function (k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     }).join('&');
     var fullUrl = EMBY_URL + path + '?' + query;
@@ -49,13 +51,18 @@ function findItemByTmdbId(tmdbId, mediaType) {
 }
 
 function findEpisode(seriesId, season, episode) {
-    return embyGet('/emby/Shows/' + seriesId + '/Episodes', {
-        Season: season,
-        Fields: 'MediaSources'
-    }).then(function (data) {
+    var params = { Fields: 'MediaSources' };
+    var hasSeason = season !== undefined && season !== null;
+    if (hasSeason) {
+        params.Season = season;
+    }
+
+    return embyGet('/emby/Shows/' + seriesId + '/Episodes', params).then(function (data) {
         var items = data.Items || [];
         for (var i = 0; i < items.length; i++) {
-            if (items[i].IndexNumber === Number(episode)) {
+            var episodeMatches = items[i].IndexNumber === Number(episode);
+            var seasonMatches = !hasSeason || items[i].ParentIndexNumber === Number(season);
+            if (episodeMatches && seasonMatches) {
                 return items[i];
             }
         }
@@ -65,8 +72,10 @@ function findEpisode(seriesId, season, episode) {
 
 function streamsFromTarget(item, target, season, episode) {
     if (!target) {
+        var seasonLabel = (season === undefined || season === null) ? '(nao informada)' : season;
+        var episodeLabel = (episode === undefined || episode === null) ? '(nao informado)' : episode;
         return [debugStream(
-            '[DEBUG] Item "' + item.Name + '" (Id=' + item.Id + ') achado, mas episodio S' + season + 'E' + episode + ' nao encontrado'
+            '[DEBUG] Item "' + item.Name + '" (Id=' + item.Id + ') achado, mas episodio nao encontrado - season=' + seasonLabel + ' episode=' + episodeLabel
         )];
     }
 
