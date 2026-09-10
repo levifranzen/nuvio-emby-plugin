@@ -7,24 +7,20 @@
 var EMBY_URL = "http://192.168.1.253:8096";
 var EMBY_API_KEY = "07c08bed43bd4d0b90adbd02de0345e1";
 
-function debugStream(message) {
-    return { name: message, title: 'Emby (debug)', url: 'about:blank', quality: 'DEBUG' };
-}
+//function debugStream(message) {
+//    return { name: message, title: 'Emby (debug)', url: 'about:blank', quality: 'DEBUG' };
+//}
 
 function embyGet(path, params) {
     params = params || {};
     params.api_key = EMBY_API_KEY;
-    var query = Object.keys(params).filter(function (k) {
-        return params[k] !== undefined && params[k] !== null;
-    }).map(function (k) {
+    var query = Object.keys(params).map(function (k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     }).join('&');
-    var fullUrl = EMBY_URL + path + '?' + query;
 
-    return fetch(fullUrl).then(function (res) {
+    return fetch(EMBY_URL + path + '?' + query).then(function (res) {
         if (!res.ok) {
-            var safeUrl = fullUrl.split('api_key=')[0] + 'api_key=HIDDEN';
-            throw new Error('Emby request failed (' + res.status + '): ' + safeUrl);
+            throw new Error('Emby request failed (' + res.status + ') for ' + path);
         }
         return res.json();
     });
@@ -51,18 +47,13 @@ function findItemByTmdbId(tmdbId, mediaType) {
 }
 
 function findEpisode(seriesId, season, episode) {
-    var params = { Fields: 'MediaSources' };
-    var hasSeason = season !== undefined && season !== null;
-    if (hasSeason) {
-        params.Season = season;
-    }
-
-    return embyGet('/emby/Shows/' + seriesId + '/Episodes', params).then(function (data) {
+    return embyGet('/emby/Shows/' + seriesId + '/Episodes', {
+        Season: season,
+        Fields: 'MediaSources'
+    }).then(function (data) {
         var items = data.Items || [];
         for (var i = 0; i < items.length; i++) {
-            var episodeMatches = items[i].IndexNumber === Number(episode);
-            var seasonMatches = !hasSeason || items[i].ParentIndexNumber === Number(season);
-            if (episodeMatches && seasonMatches) {
+            if (items[i].IndexNumber === Number(episode)) {
                 return items[i];
             }
         }
@@ -70,13 +61,9 @@ function findEpisode(seriesId, season, episode) {
     });
 }
 
-function streamsFromTarget(item, target, season, episode) {
+function streamsFromTarget(target) {
     if (!target) {
-        var seasonLabel = (season === undefined || season === null) ? '(nao informada)' : season;
-        var episodeLabel = (episode === undefined || episode === null) ? '(nao informado)' : episode;
-        return [debugStream(
-            '[DEBUG] Item "' + item.Name + '" (Id=' + item.Id + ') achado, mas episodio nao encontrado - season=' + seasonLabel + ' episode=' + episodeLabel
-        )];
+        return [];
     }
 
     var sources = (target.MediaSources && target.MediaSources.length) ? target.MediaSources : [{ Id: undefined }];
@@ -103,24 +90,19 @@ function streamsFromTarget(item, target, season, episode) {
  * @param {number} episode
  */
 function getStreams(tmdbId, mediaType, season, episode) {
-    console.log('[EmbyLocal] Request: ' + mediaType + ' tmdb=' + tmdbId + ' season=' + JSON.stringify(season) + ' episode=' + JSON.stringify(episode));
-
     return findItemByTmdbId(tmdbId, mediaType).then(function (item) {
         if (!item) {
-            return [debugStream('[DEBUG] Nenhum item Emby achado para tmdbId=' + tmdbId + ' tipo=' + mediaType)];
+            return [];
         }
 
         if (mediaType === 'tv') {
-            return findEpisode(item.Id, season, episode).then(function (target) {
-                return streamsFromTarget(item, target, season, episode);
-            });
+            return findEpisode(item.Id, season, episode).then(streamsFromTarget);
         }
 
-        return streamsFromTarget(item, item, season, episode);
+        return streamsFromTarget(item);
     }).catch(function (error) {
-        var msg = '[DEBUG] ERRO: ' + error.message;
-        console.error(msg);
-        return [debugStream(msg)];
+        console.error('[EmbyLocal] Error: ' + error.message);
+        return [];
     });
 }
 
