@@ -4,8 +4,8 @@
  * Edite EMBY_URL e EMBY_API_KEY abaixo e suba direto pro repo.
  */
 
-var EMBY_URL = "http://192.168.1.50:8096";
-var EMBY_API_KEY = "SUA_API_KEY_AQUI";
+var EMBY_URL = "http://192.168.1.253:8096";
+var EMBY_API_KEY = "07c08bed43bd4d0b90adbd02de0345e1";
 
 function debugStream(message) {
     return { name: 'Emby (debug)', title: message, url: 'about:blank', quality: 'DEBUG' };
