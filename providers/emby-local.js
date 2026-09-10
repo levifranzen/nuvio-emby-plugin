@@ -17,10 +17,12 @@ function embyGet(path, params) {
     var query = Object.keys(params).map(function (k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
     }).join('&');
+    var fullUrl = EMBY_URL + path + '?' + query;
 
-    return fetch(EMBY_URL + path + '?' + query).then(function (res) {
+    return fetch(fullUrl).then(function (res) {
         if (!res.ok) {
-            throw new Error('Emby request failed (' + res.status + ') for ' + path);
+            var safeUrl = fullUrl.split('api_key=')[0] + 'api_key=HIDDEN';
+            throw new Error('Emby request failed (' + res.status + '): ' + safeUrl);
         }
         return res.json();
     });
@@ -92,7 +94,7 @@ function streamsFromTarget(item, target, season, episode) {
  * @param {number} episode
  */
 function getStreams(tmdbId, mediaType, season, episode) {
-    console.log('[EmbyLocal] Request: ' + mediaType + ' tmdb=' + tmdbId + ' S' + season + 'E' + episode);
+    console.log('[EmbyLocal] Request: ' + mediaType + ' tmdb=' + tmdbId + ' season=' + JSON.stringify(season) + ' episode=' + JSON.stringify(episode));
 
     return findItemByTmdbId(tmdbId, mediaType).then(function (item) {
         if (!item) {
