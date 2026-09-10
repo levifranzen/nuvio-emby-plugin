@@ -1,10 +1,10 @@
 {
-  "name": "Emby Local Provider",
+  "name": "Emby",
   "version": "1.0.0",
   "scrapers": [
     {
       "id": "emby-local",
-      "name": "Emby (Local)",
+      "name": "Emby",
       "description": "Reproduz mídia diretamente do meu Emby Server local, casando pelo TMDB ID",
       "version": "1.0.0",
       "author": "Levi",
