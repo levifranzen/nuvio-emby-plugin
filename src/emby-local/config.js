@@ -16,5 +16,5 @@
  *           indevido.
  */
 
-export const EMBY_URL = "http://192.168.1.50:8096";
-export const EMBY_API_KEY = "SUA_API_KEY_AQUI";
+export const EMBY_URL = "http://192.168.1.253:8096";
+export const EMBY_API_KEY = "d2e9851555bb484ba1245696b3a3af6b";
