@@ -4,7 +4,7 @@
  * Edite EMBY_URL e EMBY_API_KEY abaixo e suba direto pro repo.
  */
 
-var EMBY_URL = "http://DESKTOP-P1J8TRK:8096";
+var EMBY_URL = "http://192.168.1.253:8096";
 var EMBY_API_KEY = "07c08bed43bd4d0b90adbd02de0345e1";
 
 //function debugStream(message) {
