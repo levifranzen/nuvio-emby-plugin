@@ -34,6 +34,19 @@ function buildStreamUrl(itemId, mediaSourceId) {
     return url;
 }
 
+/**
+ * URL com remux de audio pra AAC (mantendo o video intacto, sem
+ * transcodificar). Contorna o bug de audio OPUS travando em ~5s
+ * em algumas TVs (ex: Samsung/Tizen).
+ */
+function buildCompatibilityStreamUrl(itemId, mediaSourceId) {
+    var url = EMBY_URL + '/emby/Videos/' + itemId + '/stream?Container=mp4&VideoCodec=copy&AudioCodec=aac&api_key=' + encodeURIComponent(EMBY_API_KEY);
+    if (mediaSourceId) {
+        url += '&MediaSourceId=' + encodeURIComponent(mediaSourceId);
+    }
+    return url;
+}
+
 function findItemByTmdbId(tmdbId, mediaType) {
     var itemType = mediaType === 'movie' ? 'Movie' : 'Series';
     return embyGet('/emby/Items', {
@@ -67,19 +80,28 @@ function streamsFromTarget(target) {
     }
 
     var sources = (target.MediaSources && target.MediaSources.length) ? target.MediaSources : [{ Id: undefined }];
+    var streams = [];
 
-    return sources.map(function (src, i) {
-        var label = sources.length > 1
-            ? (target.Name + ' \u2014 Fonte ' + (i + 1))
-            : (target.Name || 'Direct Play');
+    sources.forEach(function (src, i) {
+        var suffix = sources.length > 1 ? ' \u2014 Fonte ' + (i + 1) : '';
+        var baseName = target.Name || 'Direct Play';
 
-        return {
+        streams.push({
             name: 'Emby',
-            title: label,
+            title: baseName + suffix,
             url: buildStreamUrl(target.Id, src.Id),
             quality: src.Container ? String(src.Container).toUpperCase() : 'Original'
-        };
+        });
+
+        streams.push({
+            name: 'Emby',
+            title: baseName + suffix + ' (Compatibilidade AAC)',
+            url: buildCompatibilityStreamUrl(target.Id, src.Id),
+            quality: 'AAC'
+        });
     });
+
+    return streams;
 }
 
 /**
